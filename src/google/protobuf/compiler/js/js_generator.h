@@ -73,6 +73,8 @@ struct GeneratorOptions {
     kImportCommonJsStrict,  // require() with no global export
     kImportBrowser,         // no import statements
     kImportEs6,             // import { member } from ''
+    kImportTypescript,      // import { member } from ''
+                            // export class ClassName { ...
   } import_style;
 
   GeneratorOptions()
@@ -94,7 +96,11 @@ struct GeneratorOptions {
 
   // Returns the file name extension to use for generated code.
   std::string GetFileNameExtension() const {
-    return import_style == kImportClosure ? extension : "_pb.js";
+    switch(import_style) {
+      case kImportClosure: return extension;
+      case kImportTypescript: return "_pb.ts";
+      default: return "_pb.js";
+    }
   }
 
   enum OutputMode {
@@ -241,6 +247,10 @@ class PROTOC_EXPORT Generator : public CodeGenerator {
                                io::Printer* printer,
                                const FileDescriptor* file) const;
 
+  void GenerateTypescriptClassesAndEnums(const GeneratorOptions& options,
+                                         io::Printer* printer,
+                                         const FileDescriptor* file) const;
+
   void GenerateFieldValueExpression(io::Printer* printer,
                                     const char* obj_reference,
                                     const FieldDescriptor* field,
@@ -249,6 +259,9 @@ class PROTOC_EXPORT Generator : public CodeGenerator {
   // Generate definition for one class.
   void GenerateClass(const GeneratorOptions& options, io::Printer* printer,
                      const Descriptor* desc) const;
+  void GenerateTypescriptClass(const GeneratorOptions& options,
+                               io::Printer* printer,
+                               const Descriptor* desc) const;
   void GenerateClassConstructor(const GeneratorOptions& options,
                                 io::Printer* printer,
                                 const Descriptor* desc) const;
@@ -269,6 +282,9 @@ class PROTOC_EXPORT Generator : public CodeGenerator {
   void GenerateClassToObject(const GeneratorOptions& options,
                              io::Printer* printer,
                              const Descriptor* desc) const;
+  void GenerateTypescriptClassToObject(const GeneratorOptions& options,
+                                       io::Printer* printer,
+                                       const Descriptor* desc) const;
   void GenerateClassFieldToObject(const GeneratorOptions& options,
                                   io::Printer* printer,
                                   const FieldDescriptor* field) const;
@@ -307,6 +323,9 @@ class PROTOC_EXPORT Generator : public CodeGenerator {
   // Generate definition for one enum.
   void GenerateEnum(const GeneratorOptions& options, io::Printer* printer,
                     const EnumDescriptor* enumdesc) const;
+  void GenerateTypescriptEnum(const GeneratorOptions& options,
+                              io::Printer* printer,
+                              const EnumDescriptor* enumdesc) const;
 
   // Generate an extension definition.
   void GenerateExtension(const GeneratorOptions& options, io::Printer* printer,
