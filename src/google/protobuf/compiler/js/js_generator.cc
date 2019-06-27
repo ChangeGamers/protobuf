@@ -1386,10 +1386,10 @@ std::string TypescriptFieldType(const GeneratorOptions& options,
     jstype = MaybeCrossFileRef(options, field->file(), msgDescriptor);
 
     if(primitive_types_only) {
-      jstype + ".AsObject";
+      jstype += ".AsObject";
     }
   }
-  
+
   if (field->is_repeated() && field->is_packed()) {
     if (field->type() == FieldDescriptor::TYPE_BYTES &&
         bytes_mode == BYTES_DEFAULT) {
@@ -1405,13 +1405,22 @@ std::string TypescriptFieldType(const GeneratorOptions& options,
     const FieldDescriptor* fieldKey = MapFieldKey(field);
     const FieldDescriptor* fieldValue = MapFieldValue(field);
 
-    std::string tsKeyType = TypescriptFieldType(options, fieldKey);
-    std::string tsValueType = TypescriptFieldType(options, fieldValue);
+    std::string tsKeyType = TypescriptFieldType(
+      options,
+      fieldKey,
+      force_singular,
+      primitive_types_only,
+      bytes_mode
+    );
+    std::string tsValueType = TypescriptFieldType(
+      options,
+      fieldValue,
+      force_singular,
+      primitive_types_only,
+      bytes_mode
+    );
 
     if(primitive_types_only) {
-      if(fieldValue->type() == FieldDescriptor::TYPE_MESSAGE) {
-        tsValueType += ".AsObject";
-      }
       jstype = "[" + tsKeyType + ", " + tsValueType + "][]";
     } else {
       jstype = "jspb.Map<" + tsKeyType + ", " + tsValueType + ">";
