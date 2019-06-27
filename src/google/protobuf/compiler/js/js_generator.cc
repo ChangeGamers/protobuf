@@ -1163,7 +1163,39 @@ string TypescriptAsObjectFieldName(const GeneratorOptions& options,
 bool TypescriptAsObjectOptional(const GeneratorOptions& options,
                                 const FieldDescriptor* field)
 {
-  return field->has_default_value();
+
+  if(field->is_repeated()) {
+    return false;
+  }
+
+  if(field->is_map()) {
+    return false;
+  }
+
+  switch(field->type()) {
+    case FieldDescriptor::TYPE_DOUBLE:
+    case FieldDescriptor::TYPE_FLOAT:
+    case FieldDescriptor::TYPE_INT64:
+    case FieldDescriptor::TYPE_UINT64:
+    case FieldDescriptor::TYPE_INT32:
+    case FieldDescriptor::TYPE_FIXED64:
+    case FieldDescriptor::TYPE_FIXED32:
+    case FieldDescriptor::TYPE_BOOL:
+    case FieldDescriptor::TYPE_STRING:
+    case FieldDescriptor::TYPE_UINT32:
+    case FieldDescriptor::TYPE_SFIXED32:
+    case FieldDescriptor::TYPE_SINT32:
+    case FieldDescriptor::TYPE_SFIXED64:
+    case FieldDescriptor::TYPE_SINT64:
+      return false;
+    case FieldDescriptor::TYPE_GROUP:
+    case FieldDescriptor::TYPE_MESSAGE:
+    case FieldDescriptor::TYPE_BYTES:
+    case FieldDescriptor::TYPE_ENUM:
+      return true;
+  }
+
+  return true;
 }
 
 std::string JSBinaryReaderMethodType(const FieldDescriptor* field) {
@@ -2195,7 +2227,7 @@ void Generator::GenerateTypescriptClass(const GeneratorOptions& options,
     printer->Print(
       "$field_name$$field_optional$: $field_type$;\n",
       "field_name", TypescriptAsObjectFieldName(options, field),
-      "field_optional", TypescriptAsObjectOptional(options, field) ? "?" : "",
+      "field_optional", TypescriptAsObjectOptional(options, field) == true ? "?" : "",
       "field_type", TypescriptFieldType(
         options,
         field,
