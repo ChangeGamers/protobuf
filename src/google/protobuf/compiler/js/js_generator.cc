@@ -1422,7 +1422,7 @@ std::string TypescriptFieldType(const GeneratorOptions& options,
     }
   }
 
-  if (field->is_repeated() && field->is_packed()) {
+  if (!force_singular && (field->is_repeated() && field->is_packed())) {
     if (field->type() == FieldDescriptor::TYPE_BYTES &&
         bytes_mode == BYTES_DEFAULT) {
       jstype = "Uint8Array[]|string[]";
@@ -1943,9 +1943,6 @@ void Generator::GenerateProvides(const GeneratorOptions& options,
     if (options.import_style == GeneratorOptions::kImportClosure) {
       printer->Print("goog.provide('$name$');\n", "name", *it);
     } else if (options.import_style == GeneratorOptions::kImportTypescript) {
-      std::string namespaceObject = *it;
-      printer->Print("// @TODO: export '$name$'\n", "name",
-                     namespaceObject);
     } else {
       // We aren't using Closure's import system, but we use goog.exportSymbol()
       // to construct the expected tree of objects, eg.
@@ -2297,6 +2294,13 @@ void Generator::GenerateTypescriptClass(const GeneratorOptions& options,
     printer->Print("} // namespace $ns$\n", "ns", ns);
   }
 
+  if(HasOneofFields(desc)) {
+    for(int i = 0; i < desc->oneof_decl_count(); i++) {
+      GenerateTypescriptOneofCaseEnums(
+        options, printer, desc->oneof_decl(i));
+    }
+  }
+
   // Recurse on nested types. These come after the typescript class so the 
   // proper namespace can be applied.
   for (int i = 0; i < desc->enum_type_count(); i++) {
@@ -2458,6 +2462,42 @@ void Generator::GenerateClassXid(const GeneratorOptions& options,
       "\n"
       "$class$.prototype.messageXid = xid('$class$');\n",
       "class", GetMessagePath(options, desc));
+}
+
+void Generator::GenerateTypescriptOneofCaseEnums(
+  const GeneratorOptions& options, io::Printer* printer,
+  const OneofDescriptor* oneof) const {
+  
+  std::map<std::string, std::string> vars;
+
+  std::vector<std::string> tsNamespaces = GetTypescriptNamespaceNames(oneof);
+
+  for(std::string ns : tsNamespaces) {
+    printer->Print("export namespace $ns$ {\n", "ns", ns);
+  }
+
+  printer->Print("export enum $name$Case {\n",
+    "name", JSOneofName(oneof));
+  printer->Indent();
+
+  printer->Print("$name$_NOT_SET = 0,\n",
+    "name", ToEnumCase(oneof->name()));
+
+  for (int i = 0; i < oneof->field_count(); i++) {
+    const FieldDescriptor* field = oneof->field(i);
+
+    printer->Print("$name$ = $value$,\n",
+      "name", ToEnumCase(field->name()),
+      "value", StrCat(field->number())
+    );
+  }
+
+  printer->Outdent();
+  printer->Print("}\n");
+
+  for(std::string ns : tsNamespaces) {
+    printer->Print("} // namespace $ns$\n", "ns", ns);
+  }
 }
 
 void Generator::GenerateOneofCaseDefinition(
@@ -3485,7 +3525,8 @@ void Generator::GenerateRepeatedPrimitiveHelperMethods(
       " */\n");
 
   if(options.import_style == GeneratorOptions::kImportTypescript) {
-    printer->Print(vars, "$addername$(value: $ts_type$, opt_index?: number) {\n");
+    printer->Print(vars,
+      "$addername$(value: $ts_type$, opt_index?: number): void {\n");
   } else {
     printer->Print(vars, "$class$.prototype.$addername$ = function(value, opt_index) {\n");
   }
