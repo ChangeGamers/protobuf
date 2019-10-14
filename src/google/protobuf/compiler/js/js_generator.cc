@@ -3052,7 +3052,7 @@ void Generator::GenerateClassField(const GeneratorOptions& options,
     vars["fielddef"] = FieldDefinition(options, field);
     vars["keytype"] = key_type;
     vars["class"] = GetMessagePath(options, field->containing_type());
-    vars["gettername"] = "get" + JSGetterName(options, field), "keytype", key_type;
+    vars["gettername"] = "get" + JSGetterName(options, field);
     vars["valuetype"] = value_type;
     vars["ts_keytype"] = TypescriptFieldType(options, key_field);
     vars["ts_valuetype"] = TypescriptFieldType(options, value_field);
